@@ -408,10 +408,14 @@ class TaskQuerySet(models.QuerySet):
         if prepare_params is None:
             return queryset
 
-        project = Project.objects.get(pk=prepare_params.project)
+        project = Project.objects.filter(pk=prepare_params.project).first()
+        only_undefined_field = False
+        if project:
+            only_undefined_field = project.only_undefined_field
 
-        queryset = apply_filters(queryset, prepare_params.filters, only_undefined_field=project.only_undefined_field)
-        queryset = apply_ordering(queryset, prepare_params.ordering, only_undefined_field=project.only_undefined_field)
+        # TODO: fix only_undefined_field for multiple projects
+        queryset = apply_filters(queryset, prepare_params.filters, only_undefined_field=only_undefined_field)
+        queryset = apply_ordering(queryset, prepare_params.ordering, only_undefined_field=only_undefined_field)
 
         if not prepare_params.selectedItems:
             return queryset
@@ -571,7 +575,10 @@ class PreparedTaskManager(models.Manager):
         return self.annotate_queryset(queryset, fields_for_evaluation=fields_for_evaluation, all_fields=all_fields)
 
     def only_filtered(self, prepare_params=None):
-        queryset = TaskQuerySet(self.model).filter(project=prepare_params.project)
+        if prepare_params.project is not None:
+            queryset = TaskQuerySet(self.model).filter(project=prepare_params.project)
+        else:
+            queryset = TaskQuerySet(self.model)
 
         fields_for_filter_ordering = get_fields_for_filter_ordering(prepare_params)
         queryset = self.annotate_queryset(queryset, fields_for_evaluation=fields_for_filter_ordering)

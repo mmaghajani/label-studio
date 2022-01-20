@@ -174,7 +174,8 @@ class TaskListAPI(generics.ListCreateAPIView):
         }
 
     def get_task_queryset(self, request, prepare_params):
-        return Task.prepared.only_filtered(prepare_params=prepare_params)
+        return Task.prepared.only_filtered(prepare_params=prepare_params).filter(project__organization=self.request.user.active_organization)
+
 
     def get(self, request):
         # get project
@@ -188,7 +189,7 @@ class TaskListAPI(generics.ListCreateAPIView):
             project = view.project
             self.check_object_permissions(request, project)
         else:
-            return Response({'detail': 'Neither project nor view id specified'}, status=404)
+            project = None
 
         # get prepare params (from view or from payload directly)
         prepare_params = get_prepare_params(request, project)
@@ -215,7 +216,7 @@ class TaskListAPI(generics.ListCreateAPIView):
             page = [tasks_by_ids[_id] for _id in ids]
 
             # retrieve ML predictions if tasks don't have them
-            if project.evaluate_predictions_automatically:
+            if project and project.evaluate_predictions_automatically:
                 tasks_for_predictions = Task.objects.filter(id__in=ids, predictions__isnull=True)
                 evaluate_predictions(tasks_for_predictions)
 
@@ -223,7 +224,7 @@ class TaskListAPI(generics.ListCreateAPIView):
             return self.get_paginated_response(serializer.data)
 
         # all tasks
-        if project.evaluate_predictions_automatically:
+        if project and project.evaluate_predictions_automatically:
             evaluate_predictions(queryset.filter(predictions__isnull=True))
         queryset = Task.prepared.annotate_queryset(
             queryset, fields_for_evaluation=fields_for_evaluation, all_fields=all_fields

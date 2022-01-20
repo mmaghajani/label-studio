@@ -258,7 +258,8 @@ def get_prepare_params(request, project):
                                        '"excluded | included": [...task_ids...]}')
         filters = data.get('filters', None)
         ordering = data.get('ordering', [])
-        prepare_params = PrepareParams(project=project.id, selectedItems=selected, data=data,
+        project_id = project.id if project else None
+        prepare_params = PrepareParams(project=project_id, selectedItems=selected, data=data,
                                        filters=filters, ordering=ordering)
     return prepare_params
 

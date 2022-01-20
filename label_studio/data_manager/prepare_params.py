@@ -34,7 +34,7 @@ class SelectedItems(BaseModel):
 
 
 class PrepareParams(BaseModel):
-    project: int
+    project: Optional[int] = None
     ordering: List[str] = []
     selectedItems: Optional[SelectedItems] = None
     filters: Optional[Filters] = None
